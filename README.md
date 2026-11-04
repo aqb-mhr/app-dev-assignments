@@ -51,7 +51,7 @@ flutter pub get
 flutter run
 ```
 
-Requires the Flutter SDK (Dart ^3.5.0). Tested target: Android / iOS / web.
+Requires Flutter 3.27 or newer (Dart ^3.6.0). Tested target: Android / iOS / web.
 
 ## Test the error state
 
