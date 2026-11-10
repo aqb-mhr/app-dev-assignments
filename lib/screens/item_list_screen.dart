@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../actions/item_actions.dart';
 import '../data/item_repository.dart';
 import '../logic/item_filter.dart';
 import '../models/lost_item.dart';
@@ -7,6 +8,7 @@ import '../widgets/empty_state.dart';
 import '../widgets/item_card.dart';
 import '../widgets/status_filter_bar.dart';
 import 'add_item_screen.dart';
+import 'item_detail_screen.dart';
 
 /// Home screen: live list of items with title search and status filter.
 class ItemListScreen extends StatefulWidget {
@@ -69,6 +71,18 @@ class _ItemListScreenState extends State<ItemListScreen> {
         SnackBar(content: Text('Posted "$postedTitle"')),
       );
     }
+  }
+
+  void _openDetail(LostItem item) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ItemDetailScreen(
+          repository: _repo,
+          itemId: item.id,
+          initialItem: item,
+        ),
+      ),
+    );
   }
 
   void _clearFilters() {
@@ -194,7 +208,13 @@ class _ItemListScreenState extends State<ItemListScreen> {
       separatorBuilder: (_, _) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final item = visible[index];
-        return ItemCard(key: ValueKey(item.id), item: item);
+        return ItemCard(
+          key: ValueKey(item.id),
+          item: item,
+          onTap: () => _openDetail(item),
+          onClaim: () => confirmAndClaim(context, _repo, item),
+          onDelete: () => confirmAndDelete(context, _repo, item),
+        );
       },
     );
   }
