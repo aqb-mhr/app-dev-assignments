@@ -4,12 +4,27 @@ import '../logic/item_filter.dart';
 import '../models/lost_item.dart';
 import 'seed_data.dart';
 
+/// Result of a "Mark as Claimed" attempt.
+enum ClaimOutcome {
+  /// This call changed the item to Claimed.
+  claimed,
+
+  /// Someone else claimed it first; nothing was written.
+  alreadyClaimed,
+
+  /// The item was deleted before the claim went through.
+  notFound,
+}
+
 /// All Firestore access for the `items` collection lives here, so screens
 /// never touch collection paths or field names directly.
 class ItemRepository {
   ItemRepository(this._db);
 
   final FirebaseFirestore _db;
+
+  /// Claims currently running on this device, keyed by item id.
+  final Map<String, Future<ClaimOutcome>> _claimsInFlight = {};
 
   static const String collectionPath = 'items';
 
@@ -56,6 +71,46 @@ class ItemRepository {
       'createdAt': FieldValue.serverTimestamp(),
     });
     return ref.id;
+  }
+
+  /// Marks an item as Claimed inside a Firestore transaction.
+  ///
+  /// The transaction reads the current status and only writes if the item
+  /// is still Lost or Found. If two people tap "Claimed" at the same moment,
+  /// Firestore detects that the document changed under one of them and
+  /// retries that transaction; on retry it reads "Claimed" and returns
+  /// [ClaimOutcome.alreadyClaimed] without writing. Exactly one claim wins
+  /// and `claimedAt` / `previousStatus` are written exactly once.
+  ///
+  /// Repeated taps on the same device share one transaction, which saves a
+  /// round trip on top of the server-side guarantee.
+  Future<ClaimOutcome> markAsClaimed(String id) {
+    final pending = _claimsInFlight[id];
+    if (pending != null) return pending;
+
+    final claim = _runClaimTransaction(id)
+        .whenComplete(() => _claimsInFlight.remove(id));
+    _claimsInFlight[id] = claim;
+    return claim;
+  }
+
+  Future<ClaimOutcome> _runClaimTransaction(String id) {
+    final ref = _items.doc(id);
+    return _db.runTransaction<ClaimOutcome>((transaction) async {
+      // All reads must happen before any writes in a transaction.
+      final snapshot = await transaction.get(ref);
+      if (!snapshot.exists) return ClaimOutcome.notFound;
+
+      final current = ItemStatus.fromLabel(snapshot.data()?['status']);
+      if (current == ItemStatus.claimed) return ClaimOutcome.alreadyClaimed;
+
+      transaction.update(ref, <String, dynamic>{
+        'status': ItemStatus.claimed.label,
+        'previousStatus': current.label,
+        'claimedAt': FieldValue.serverTimestamp(),
+      });
+      return ClaimOutcome.claimed;
+    });
   }
 
   Future<void> deleteItem(String id) => _items.doc(id).delete();
