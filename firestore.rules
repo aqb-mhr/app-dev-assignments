@@ -1,0 +1,43 @@
+rules_version = '2';
+
+// Security rules for the Campus Lost & Found app.
+// Paste into Firebase console > Firestore Database > Rules, then Publish.
+//
+// The app has no sign-in, so anyone may read, post and delete. Updates are
+// locked down to the single transition the app performs ("Mark as Claimed"),
+// which backs up the client transaction on the server: once an item is
+// Claimed, no further claim can be committed, whoever sends it.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /items/{itemId} {
+
+      function validStatus(status) {
+        return status in ['Lost', 'Found', 'Claimed'];
+      }
+
+      function validItem(data) {
+        return data.keys().hasAll(
+                 ['title', 'category', 'location', 'status', 'description', 'postedBy'])
+          && data.title is string && data.title.size() > 0 && data.title.size() <= 100
+          && data.category is string
+          && data.location is string && data.location.size() > 0
+          && data.description is string && data.description.size() <= 1000
+          && data.postedBy is string && data.postedBy.size() > 0
+          && validStatus(data.status);
+      }
+
+      allow read: if true;
+
+      allow create: if validItem(request.resource.data);
+
+      // Only Lost/Found -> Claimed, and only the claim fields may change.
+      allow update: if resource.data.status != 'Claimed'
+        && request.resource.data.status == 'Claimed'
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['status', 'previousStatus', 'claimedAt']);
+
+      allow delete: if true;
+    }
+  }
+}
