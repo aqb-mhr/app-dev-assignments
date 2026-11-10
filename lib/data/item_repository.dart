@@ -88,8 +88,9 @@ class ItemRepository {
     final pending = _claimsInFlight[id];
     if (pending != null) return pending;
 
-    final claim = _runClaimTransaction(id)
-        .whenComplete(() => _claimsInFlight.remove(id));
+    final claim = _runClaimTransaction(id).whenComplete(() {
+      _claimsInFlight.remove(id);
+    });    
     _claimsInFlight[id] = claim;
     return claim;
   }
