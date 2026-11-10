@@ -37,11 +37,18 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
   bool _claiming = false;
 
   Future<void> _claim(LostItem item) async {
-    setState(() => _claiming = true);
-    await confirmAndClaim(context, widget.repository, item);
+    // Spinner only after the user confirms, not while the dialog is open.
+    await confirmAndClaim(
+      context,
+      widget.repository,
+      item,
+      onConfirmed: () {
+        if (mounted) setState(() => _claiming = true);
+      },
+    );
     if (mounted) setState(() => _claiming = false);
   }
-
+  
   Future<void> _delete(LostItem item) async {
     final navigator = Navigator.of(context);
     await confirmAndDelete(

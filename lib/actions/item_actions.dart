@@ -9,8 +9,9 @@ import '../models/lost_item.dart';
 Future<ClaimOutcome?> confirmAndClaim(
   BuildContext context,
   ItemRepository repository,
-  LostItem item,
-) async {
+  LostItem item, {
+  VoidCallback? onConfirmed,
+}) async {  
   final messenger = ScaffoldMessenger.of(context);
   final confirmed = await showDialog<bool>(
     context: context,
@@ -35,7 +36,7 @@ Future<ClaimOutcome?> confirmAndClaim(
     ),
   );
   if (confirmed != true) return null;
-
+  onConfirmed?.call();
   try {
     final outcome = await repository.markAsClaimed(item.id);
     final message = switch (outcome) {
