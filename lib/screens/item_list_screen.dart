@@ -6,6 +6,7 @@ import '../models/lost_item.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/item_card.dart';
 import '../widgets/status_filter_bar.dart';
+import 'add_item_screen.dart';
 
 /// Home screen: live list of items with title search and status filter.
 class ItemListScreen extends StatefulWidget {
@@ -56,6 +57,20 @@ class _ItemListScreenState extends State<ItemListScreen> {
     }
   }
 
+  Future<void> _openAddItem() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final postedTitle = await Navigator.of(context).push<String>(
+      MaterialPageRoute(
+        builder: (_) => AddItemScreen(repository: _repo),
+      ),
+    );
+    if (postedTitle != null) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('Posted "$postedTitle"')),
+      );
+    }
+  }
+
   void _clearFilters() {
     _searchController.clear();
     setState(() {
@@ -67,6 +82,12 @@ class _ItemListScreenState extends State<ItemListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      floatingActionButton: FloatingActionButton.extended(
+        key: const ValueKey('add-item-fab'),
+        onPressed: _openAddItem,
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('Post item'),
+      ),
       body: SafeArea(
         bottom: false,
         child: Center(
