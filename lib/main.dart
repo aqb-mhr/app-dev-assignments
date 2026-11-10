@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
+import 'app.dart';
+import 'data/item_repository.dart';
 import 'firebase_options.dart';
 
 Future<void> main() async {
@@ -16,24 +18,9 @@ Future<void> main() async {
     return;
   }
 
-  runApp(LostFoundApp(firestore: FirebaseFirestore.instance));
-}
-
-class LostFoundApp extends StatelessWidget {
-  const LostFoundApp({super.key, required this.firestore});
-
-  final FirebaseFirestore firestore;
-
-  @override
-  Widget build(BuildContext context) {
-    return const MaterialApp(
-      title: 'Campus Lost & Found',
-      debugShowCheckedModeBanner: false,
-      home: Scaffold(
-        body: Center(child: Text('Connected to Firebase')),
-      ),
-    );
-  }
+  runApp(
+    LostFoundApp(repository: ItemRepository(FirebaseFirestore.instance)),
+  );
 }
 
 /// Shown when Firebase could not be initialised (usually because
