@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../logic/item_filter.dart';
 import '../models/lost_item.dart';
+import 'seed_data.dart';
 
 /// All Firestore access for the `items` collection lives here, so screens
 /// never touch collection paths or field names directly.
@@ -62,4 +63,28 @@ class ItemRepository {
   /// Writes a deleted item back under its original id (used by "Undo").
   Future<void> restoreItem(LostItem item) =>
       _items.doc(item.id).set(item.toFirestore());
+
+  /// One-time seed of the 8 sample items from the brief.
+  ///
+  /// Each sample has a fixed document id and only missing ones are written,
+  /// so running it again never duplicates items or resets a status someone
+  /// already changed. Returns how many items were added.
+  Future<int> seedSampleItems({DateTime? now}) async {
+    final base = now ?? DateTime.now();
+    final refs = [for (final seed in sampleItems) _items.doc(seed.id)];
+    final existing = await Future.wait(refs.map((ref) => ref.get()));
+
+    final batch = _db.batch();
+    var added = 0;
+    for (var i = 0; i < sampleItems.length; i++) {
+      if (existing[i].exists) continue;
+      // Stagger timestamps so the list shows a realistic "posted 5h ago"
+      // spread, with the first row of the table as the newest.
+      final createdAt = base.subtract(Duration(hours: 1 + i * 5));
+      batch.set(refs[i], sampleItems[i].toFirestore(createdAt: createdAt));
+      added++;
+    }
+    if (added > 0) await batch.commit();
+    return added;
+  }
 }
