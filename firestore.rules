@@ -1,0 +1,116 @@
+rules_version = '2';
+
+// IBA RoomBook - Cloud Firestore Security Rules
+// Paste into Firebase console > Firestore Database > Rules (also in firestore.rules).
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------------------------------------------------------------- helpers
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function bookingPath(id) {
+      return /databases/$(database)/documents/bookings/$(id);
+    }
+
+    // ------------------------------------------------------------------ rooms
+    // Seeded by hand in the console. Everyone signed in can read.
+    match /rooms/{roomId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    // ------------------------------------------------------------------ users
+    match /users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+
+      // Sign-up: you can only create YOUR OWN profile, and only as a student.
+      allow create: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.uid == uid
+        && request.resource.data.role == 'student'
+        && request.resource.data.keys().hasOnly(
+             ['uid', 'name', 'email', 'role', 'activeBookingIds', 'createdAt']);
+
+      // THE SELF-PROMOTION TRAP: you may edit your own doc (name, the
+      // activeBookingIds list maintained by the booking transaction) but the
+      // update is rejected if it touches `role` (or uid / email) at all.
+      // Admins are promoted only from the Firebase console (bypasses rules).
+      allow update: if signedIn()
+        && request.auth.uid == uid
+        && !request.resource.data.diff(resource.data).affectedKeys()
+              .hasAny(['role', 'uid', 'email']);
+
+      allow delete: if false;
+    }
+
+    // --------------------------------------------------------------- bookings
+    match /bookings/{bookingId} {
+      allow read: if signedIn();
+
+      // Create only for yourself, only 'active', only a slot that hasn't
+      // ended, and only together with the matching slot lock written in the
+      // same transaction (getAfter = state after this commit).
+      allow create: if signedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.status == 'active'
+        && request.resource.data.slotStart is timestamp
+        && request.resource.data.slotEnd is timestamp
+        && request.resource.data.slotEnd > request.resource.data.slotStart
+        && request.resource.data.slotEnd > request.time
+        && request.resource.data.lockId ==
+             request.resource.data.roomId + '_' + string(request.resource.data.slotStart.toMillis())
+        && getAfter(/databases/$(database)/documents/slotLocks/$(request.resource.data.lockId))
+             .data.bookingId == bookingId;
+
+      // Owner: may only cancel (status active -> cancelled), only before the
+      // slot starts, and may only touch the cancellation fields.
+      // Admin: may update any booking (force-cancel).
+      allow update: if isAdmin()
+        || (signedIn()
+            && resource.data.userId == request.auth.uid
+            && request.resource.data.userId == request.auth.uid
+            && resource.data.status == 'active'
+            && request.resource.data.status == 'cancelled'
+            && request.time < resource.data.slotStart
+            && request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['status', 'cancelledAt', 'cancelledBy']));
+
+      // Cancellation is a status update - never a delete (audit trail).
+      allow delete: if false;
+    }
+
+    // -------------------------------------------------------------- slotLocks
+    // One doc per (roomId, slotStart): {bookingId, roomId, slotStart, userId}.
+    // This is what the booking transaction re-reads. The rules make the
+    // no-double-booking guarantee hold server-side too: a lock can only be
+    // taken over if the booking it currently points to is no longer active.
+    match /slotLocks/{lockId} {
+      allow read: if signedIn();
+
+      function newBookingIsMineAndMatches() {
+        let b = getAfter(bookingPath(request.resource.data.bookingId)).data;
+        return request.resource.data.userId == request.auth.uid
+          && b.userId == request.auth.uid
+          && b.status == 'active'
+          && b.lockId == lockId;
+      }
+
+      function previousHolderIsFree() {
+        let prev = get(bookingPath(resource.data.bookingId)).data;
+        return prev.status != 'active' || prev.slotEnd <= request.time;
+      }
+
+      allow create: if signedIn() && newBookingIsMineAndMatches();
+      allow update: if signedIn() && newBookingIsMineAndMatches() && previousHolderIsFree();
+      allow delete: if false;
+    }
+  }
+}
