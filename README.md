@@ -158,10 +158,10 @@ Tested **live against the published rules** on 2026-11-19 with [`tool/rules_test
 
 ---
 
-## Personal design note — a bug I hit in the transaction
+## Personal design note — what went wrong while I built and tested booking
 
-> **TODO (student):** write 3–5 bullet points **in your own words** about a bug *you* hit while building/testing the transaction, and how you found and fixed it. (The brief says generic answers are easy to spot, so this must come from your own experience doing the two-emulator test.)
-
--
--
--
+- **The bug:** after my first booking worked, the My Bookings screen did not show my bookings. Instead it showed `failed-precondition: The query requires an index`. This happened for both the Upcoming list and the Past bookings list.
+- **Why:** these screens filter on more than one field at once (`userId` plus `slotEnd`, and for past bookings also `status`). Firestore will not run that kind of query until a composite index exists for exactly those fields.
+- **The fix:** I created the indexes in the Firebase console. The Past bookings one did not work at first. Firestore needed the fields in its own order (`status`, then `userId`, then `slotEnd` descending), so I recreated it in that order and restarted the app. After that both lists loaded.
+- **Testing the transaction:** I booked the same slot from two windows. Only one booking went through, and the other window said the slot was already booked, so no double booking happened.
+- **Testing the limit:** with 2 active bookings I tried to book a third slot and got an alert that I already had 2 bookings, so the limit is checked before anything is saved.
