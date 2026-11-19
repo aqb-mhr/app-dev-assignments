@@ -135,10 +135,28 @@ The room grid, My Bookings and the Admin tab are three views over the same `book
 
 ## Security-rules test log
 
-> **TODO (student):** run these yourself (Rules Playground or a real request from the app) and record the results.
+Tested **live against the published rules** on 2026-11-19 with [`tool/rules_test.py`](tool/rules_test.py). The script signs up two throwaway student accounts through the Firebase Auth REST API and sends real allowed and forbidden requests to the Firestore REST API, bypassing the app completely. This is the same thing a student inspecting network traffic could do. Run it again with `python tool/rules_test.py`.
 
 | # | As | Attempt | Expected | Result |
 |---|---|---|---|---|
+| 0 | student | sign-up: create own profile with `role: "admin"` | DENY | ✅ DENY (403) |
+| 1 | student | **update own `users/{uid}` → `role: "admin"` (self-promotion)** | DENY | ✅ DENY (403) |
+| 2 | student | update own `users/{uid}` → `name` | ALLOW | ✅ ALLOW |
+| 2b | student | update another user's profile | DENY | ✅ DENY (403) |
+| 3 | student | create booking with `userId` = someone else | DENY | ✅ DENY (403) |
+| 3b | student | create own booking + slot lock + `activeBookingIds` (the app's transaction writes) | ALLOW | ✅ ALLOW |
+| 3c | student | read another student's booking | ALLOW | ✅ ALLOW |
+| 4 | student | update another student's booking → `cancelled` | DENY | ✅ DENY (403) |
+| 4b | student | cancel own booking before it starts | ALLOW | ✅ ALLOW |
+| 5 | student | delete own booking | DENY | ✅ DENY (403) |
+| 5b | student | delete a slot lock | DENY | ✅ DENY (403) |
+| 6 | admin | force-cancel another student's booking | ALLOW | _TODO: test from the Admin tab_ |
+| 7 | student | book a slot whose lock points to someone else's **active** booking (double-booking without going through the app) | DENY | ✅ DENY (403) |
+| 7b | student | book the same slot after its booking was cancelled | ALLOW | ✅ ALLOW |
+| 8 | signed out | read `bookings` | DENY | ✅ DENY (403) |
+| 9 | student | edit a room | DENY | ✅ DENY (403) |
+
+---|---|---|---|---|
 | 1 | student | update own `users/{uid}` → `role: "admin"` | DENY | |
 | 2 | student | update own `users/{uid}` → `name` | ALLOW | |
 | 3 | student | create booking with `userId` = someone else | DENY | |
