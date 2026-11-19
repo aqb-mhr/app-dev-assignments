@@ -30,7 +30,7 @@ class MyBookingsScreen extends ConsumerWidget {
           header('Upcoming (next 7 days)'),
           ...upcoming.when(
             loading: () => [const LinearProgressIndicator()],
-            error: (e, _) => [ListTile(title: Text('Error: $e'))],
+            error: (e, _) => [ListTile(title: SelectableText('Error: $e'))],
             data: (list) => list.isEmpty
                 ? [const ListTile(title: Text('No bookings yet.'))]
                 : [
@@ -57,7 +57,7 @@ class MyBookingsScreen extends ConsumerWidget {
                 child: Center(child: CircularProgressIndicator()),
               )
             ],
-            error: (e, _) => [ListTile(title: Text('Error: $e'))],
+            error: (e, _) => [ListTile(title: SelectableText('Error: $e'))],
             data: (state) => [
               if (state.items.isEmpty)
                 const ListTile(title: Text('No past bookings.')),

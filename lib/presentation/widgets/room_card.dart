@@ -58,7 +58,7 @@ class RoomCard extends ConsumerWidget {
                 style: Theme.of(context).textTheme.bodySmall),
             const SizedBox(height: 10),
             if (bookingsAsync.hasError)
-              Text('Could not load bookings: ${bookingsAsync.error}',
+              SelectableText('Could not load bookings: ${bookingsAsync.error}',
                   style: TextStyle(color: Theme.of(context).colorScheme.error))
             else if (bookingsAsync.isLoading && !bookingsAsync.hasValue)
               const LinearProgressIndicator()

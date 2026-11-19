@@ -29,7 +29,7 @@ class RoomsScreen extends ConsumerWidget {
             error: (e, _) => Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
-                child: Text('Could not load rooms:\n$e',
+                child: SelectableText('Could not load rooms:\n$e',
                     textAlign: TextAlign.center),
               ),
             ),
