@@ -150,21 +150,11 @@ Tested **live against the published rules** on 2026-11-19 with [`tool/rules_test
 | 4b | student | cancel own booking before it starts | ALLOW | ✅ ALLOW |
 | 5 | student | delete own booking | DENY | ✅ DENY (403) |
 | 5b | student | delete a slot lock | DENY | ✅ DENY (403) |
-| 6 | admin | force-cancel another student's booking | ALLOW | _TODO: test from the Admin tab_ |
+| 6 | admin | force-cancel another student's booking | ALLOW | ✅ ALLOW (tested in the Admin tab) |
 | 7 | student | book a slot whose lock points to someone else's **active** booking (double-booking without going through the app) | DENY | ✅ DENY (403) |
 | 7b | student | book the same slot after its booking was cancelled | ALLOW | ✅ ALLOW |
 | 8 | signed out | read `bookings` | DENY | ✅ DENY (403) |
 | 9 | student | edit a room | DENY | ✅ DENY (403) |
-
----|---|---|---|---|
-| 1 | student | update own `users/{uid}` → `role: "admin"` | DENY | |
-| 2 | student | update own `users/{uid}` → `name` | ALLOW | |
-| 3 | student | create booking with `userId` = someone else | DENY | |
-| 4 | student | update another student's booking → `cancelled` | DENY | |
-| 5 | student | delete own booking | DENY | |
-| 6 | admin | update another student's booking → `cancelled` | ALLOW | |
-| 7 | student | overwrite a `slotLocks` doc whose booking is still active | DENY | |
-| 8 | signed out | read `bookings` | DENY | |
 
 ---
 
