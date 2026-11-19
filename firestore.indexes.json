@@ -21,8 +21,8 @@
       "collectionGroup": "bookings",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "userId", "order": "ASCENDING" },
         { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "userId", "order": "ASCENDING" },
         { "fieldPath": "slotEnd", "order": "DESCENDING" }
       ]
     }

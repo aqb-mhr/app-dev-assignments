@@ -65,7 +65,8 @@ class FirestoreBookingRepository implements BookingRepository {
     required int pageSize,
     Object? cursor,
   }) async {
-    // Composite index: userId ASC, status ASC, slotEnd DESC
+    // Composite index: status ASC, userId ASC, slotEnd DESC
+    // (Firestore requires the whereIn field first for this query.)
     // Stored status of a no-show is still 'active' (client-side expiry),
     // so past = slot ended + not cancelled.
     Query<Map<String, dynamic>> q = _bookings
