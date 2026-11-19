@@ -20,7 +20,7 @@ Firebase console setup:
 1. **Authentication → Sign-in method:** enable *Email/Password*.
 2. **Firestore → Rules:** paste [`rules.txt`](rules.txt).
 3. **Firestore → Indexes:** create the 3 composite indexes in [`firestore.indexes.json`](firestore.indexes.json). You can also just click the link Firestore prints in the debug console the first time each query runs.
-4. **Seed `rooms`** by hand with the values below.
+4. **Seed `rooms`** with `dart run tool/seed_rooms.dart <project-id>` *before* pasting the rules (it needs test mode), or by hand with the values below.
 5. Sign up a second account in the app. Then in the console set `users/{thatUid}.role = "admin"`.
 
 Tests: `flutter test` · Lints: `flutter analyze`
@@ -29,12 +29,20 @@ Tests: `flutter test` · Lints: `flutter analyze`
 
 ## Personalized seed data
 
-> **TODO (student):** fill in your roll number. Formula: N = last 4 digits of the roll number, left-padded with zeros. Capacity = (N mod 8) + 2. Odd rooms go on floor 1 and even rooms on floor 2.
+Roll number `29184` → **N = `9184`** → capacity = (9184 mod 8) + 2 = 0 + 2 = **2**
 
-Roll number: `_____` → **N = `NNNN`** → capacity = (`NNNN` mod 8) + 2 = **`C`**
+| Doc id | name        | floor | capacity |
+|--------|-------------|-------|----------|
+| room1  | Room-9184-1 | 1     | 2        |
+| room2  | Room-9184-2 | 2     | 2        |
+| room3  | Room-9184-3 | 1     | 2        |
+| room4  | Room-9184-4 | 2     | 2        |
+| room5  | Room-9184-5 | 1     | 2        |
+| room6  | Room-9184-6 | 2     | 2        |
 
-| Doc id (any) | name        | floor | capacity |
-|--------------|-------------|-------|----------|
+Seeded with `dart run tool/seed_rooms.dart <project-id>` while Firestore was in test mode (or add by hand in the console). `floor` and `capacity` are stored as **numbers**.
+
+--------------|-------------|-------|----------|
 | room1        | Room-NNNN-1 | 1     | C        |
 | room2        | Room-NNNN-2 | 2     | C        |
 | room3        | Room-NNNN-3 | 1     | C        |
