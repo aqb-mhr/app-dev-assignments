@@ -81,6 +81,10 @@ class FirebaseAuthRepository implements AuthRepository {
           'Incorrect email or password.',
         'too-many-requests' => 'Too many attempts. Try again later.',
         'network-request-failed' => 'No internet connection.',
+        'operation-not-allowed' ||
+        'configuration-not-found' =>
+          'Email/Password sign-in is not enabled in the Firebase console '
+              '(Authentication → Sign-in method).',
         _ => e.message ?? 'Authentication failed (${e.code}).',
       };
 }
